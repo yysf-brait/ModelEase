@@ -11,11 +11,10 @@ y = 4
 # data: 数据集, x_index: 自变量索引, y_index: 因变量索引
 # random_state: 随机种子, test_size: 测试集比例
 # make: 是否创建数据集（分割x、y的测试集与训练集）, name: 数据集名称
-dataset = me.data_set(data1, x, y, random_state=37, test_size=0.25, make=True, name='iris')
+dataset = me.dataSet.data_set(data1, x, y, random_state=37, test_size=0.25, make=True, name='iris')
 
 # 创建贝叶斯模型，name为模型的名字
 # 请注意，这里的name是模型的名称，不是数据集的名称，并且不能与已有模型重名
-# 也不能进行覆盖！TODO: 重名检测
 # 默认命名为贝叶斯+日期时间，详见参数原型
 Bayes = me.CNBayes(dataset, name='贝叶斯')
 # 搜索最佳参数，可设置搜索范围请见函数原型
@@ -37,9 +36,9 @@ Bayes.roc()
 # 请注意，这里的name是模型的名称，不是数据集的名称，并且不能与已有模型重名
 Tree = me.DecisionTree(dataset, name='决策树')
 # 搜索最佳参数，可设置搜索范围请见函数原型
-Tree.best_params_search()
+Tree.define_model(criterion='gini', max_depth=4, min_samples_split=2, min_samples_leaf=2)
 # 使用最佳参数训练模型（自动定义最佳模型）
-Tree.train_best_params()
+Tree.train()
 # 当然你也可以直接使用自定义参数训练模型
 # 但是请注意，需要先定义模型，再训练模型
 # Tree.define_model(max_depth=3, min_samples_split=2, min_samples_leaf=1)

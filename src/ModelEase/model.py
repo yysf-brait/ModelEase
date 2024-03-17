@@ -1,6 +1,5 @@
 """
 本文件定义了多个模型的类，用于实现不同的功能
-TODO：命名冲突
 """
 import time
 import warnings
@@ -13,7 +12,7 @@ import pandas as pd
 from . import decorators
 from . import model_list
 from . import n_jobs
-from .dataSL import data_set
+from .dataSet import data_set
 
 
 def comparison(*args) -> pd.DataFrame:
