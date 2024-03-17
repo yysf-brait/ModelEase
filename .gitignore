@@ -1,3 +1,4 @@
+.idea
 .venv
-dist
-src/ModelEase.egg-info
+dist/*
+src/*.egg-info
