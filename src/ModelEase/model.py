@@ -26,7 +26,7 @@ def comparison(*args) -> pd.DataFrame:
                            'predict_cost': i.predict_cost if hasattr(i, 'predict_cost') else None,
                            'accuracy': i.accuracy if hasattr(i, 'accuracy') else None,
                            'precision': i.precision if hasattr(i, 'precision') else None,
-                           'recall': i.recall if hasattr(i, 'recall') else None,
+                           'recall': i.recall if hasattr(i, 'recallpip') else None,
                            'f1_score': i.f1_score if hasattr(i, 'f1_score') else None}
     return pd.DataFrame(ret).T
 

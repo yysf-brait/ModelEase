@@ -62,15 +62,15 @@ ModelEase README
 
 # API
 
-- 创建数据集 `me.data_set`
-- 创建模型 `me.CNBayes`, `me.DecisionTree`, `me.GNBayes`, `me.KNN`, `me.RandomForest`, `me.AdaBoost`, `me.SVM`
-- 定义模型 `model.define_model`
-- 训练模型 `model.train`
-- 搜索最佳参数 `model.best_params_search`
-- 使用最佳参数训练模型 `model.train_best_params`
-- 预测测试集 `model.predict`
-- 评估模型 `model.evaluate`
-- 对比模型的效果 `me.comparison`
+- 创建数据集 `me.dataSet.data_set`
+- 创建模型 `me.model.CNBayes`, `me.model.DecisionTree`, `me.model.GNBayes`, `me.model.KNN`, `me.model.RandomForest`, `me.model.AdaBoost`, `me.model.SVM`
+- 定义模型 `a_model.define_model`
+- 训练模型 `a_model.train`
+- 搜索最佳参数 `a_model.best_params_search`
+- 使用最佳参数训练模型 `a_model.train_best_params`
+- 预测测试集 `a_model.predict`
+- 评估模型 `a_model.evaluate`
+- 对比模型的效果 `me.model.comparison`
 
 # TODO
 
@@ -113,7 +113,7 @@ make 参数指定为 True，指示不需要额外数据预处理，直接执行�
 
 ```python
 # 创建数据集
-dataset = me.data_set(data, features, target, random_state=37, test_size=0.25, make=True, name='iris')
+dataset = me.dataSet.data_set(data, features, target, random_state=37, test_size=0.25, make=True, name='iris')
 ```
 
 ## 创建模型
@@ -121,11 +121,11 @@ dataset = me.data_set(data, features, target, random_state=37, test_size=0.25, m
 ### 贝叶斯模型
 接下来，让我们创建并训练一个贝叶斯模型。
 我们使用 dataset 来创建模型，设置模型的 name 为“贝叶斯”。
-创建模型时，模型会自动注册到 me.model_list 中。
+创建模型时，模型会自动注册到 me.model.model_list 中。
 
 ```python
 # 创建贝叶斯模型
-Bayes = me.CNBayes(dataset, name='贝叶斯')
+Bayes = me.model.CNBayes(dataset, name='贝叶斯')
 ```
 
 随后使用最佳参数搜索功能来搜索最佳参数，并使用这些参数来训练模型。
@@ -153,11 +153,11 @@ Bayes.roc()
 ### 决策树模型
 接下来，让我们创建并训练一个决策树模型。
 我们使用 dataset 来创建模型，设置模型的 name 为“决策树”。
-创建模型时，模型会自动注册到 me.model_list 中。
+创建模型时，模型会自动注册到 me.model.model_list 中。
 
 ```python
 # 创建决策树模型
-Tree = me.DecisionTree(dataset, name='决策树')
+Tree = me.model.DecisionTree(dataset, name='决策树')
 ```
 
 这次我们将使用指定参数来训练模型。
@@ -186,14 +186,14 @@ Tree.roc()
 调用这些模型的方法与上述两个模型完全相同，你只需要调用相应的类即可。
 
 ## 模型展示
-您可以使用 me.comparison() 函数查看并对比模型。
+您可以使用 me.model.comparison() 函数查看并对比模型。
 你会得到一个表格，其中包含了已注册的模型及其训练耗时、预测耗时、准确率、精确率、召回率、F1 值。
 
 ```python
 # 查看已注册的模型及其性能
-print(me.comparison())
+print(me.model.comparison())
 # 您也可以指定需要展示的模型
-print(me.comparison(Bayes, Tree))
+print(me.model.comparison(Bayes, Tree))
 ```
 
 ## 撤销模型
@@ -204,8 +204,8 @@ print(me.comparison(Bayes, Tree))
 del Bayes
 ```
 ```python
-# 使用 me.comparison() 查看现有的模型
-print(me.comparison())
+# 使用 me.model.comparison() 查看现有的模型
+print(me.model.comparison())
 # 您会发现贝叶斯模型已经被撤销
 ```
 
@@ -218,18 +218,18 @@ print(me.comparison())
 
 ## 非常规撤销模型
 
-通过操作 me.model_list 来撤销模型是不建议的
+通过操作 me.model.model_list 来撤销模型是不建议的
 这样只会撤销模型的注册，不会删除变量或者模型本身
 如果您再次注册同名模型，会覆盖之前模型的注册，导致展示和对比时的混淆
 ```python
 # 例如，删除决策树模型
-del me.model_list['决策树']
-# 使用 me.comparison() 查看现有的模型
-print(me.comparison())
+del me.model.model_list['决策树']
+# 使用 me.model.comparison() 查看现有的模型
+print(me.model.comparison())
 # 您会发现决策树模型已经被撤销
 
 # 您现在可以再注册一个同名的决策树模型了
-Another_Tree = me.DecisionTree(dataset, name='决策树')
+Another_Tree = me.model.DecisionTree(dataset, name='决策树')
 # 定义一个不一样的模型
 Another_Tree.define_model(max_depth=1, min_samples_split=2, min_samples_leaf=1)
 # 训练模型
@@ -238,15 +238,15 @@ Another_Tree.train()
 Another_Tree.predict()
 # 评估模型
 Another_Tree.evaluate(roc=False)
-# 使用 me.comparison() 查看现有的模型
-print(me.comparison())
+# 使用 me.model.comparison() 查看现有的模型
+print(me.model.comparison())
 # 您会发现又有了一个决策树模型
 
 # Tree 和 Another_Tree 是两个不同的模型
-# 但是它们的名字相同，所以 me.comparison() 只会展示后载入的模型
-print(me.comparison(Tree, Another_Tree))
+# 但是它们的名字相同，所以 me.model.comparison() 只会展示后载入的模型
+print(me.model.comparison(Tree, Another_Tree))
 # 您会发现只有 Another_Tree 被展示了
-print(me.comparison(Another_Tree, Tree))
+print(me.model.comparison(Another_Tree, Tree))
 # 您会发现只有 Tree 被展示了
 
 # 这比较复杂，所以不建议进行此操作！
