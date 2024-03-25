@@ -13,6 +13,7 @@ model.define_model()
 model.train()
 model.predict()
 model.scatter()
+print(model.coef, model.intercept)
 model.evaluate()
 
 model.auto()

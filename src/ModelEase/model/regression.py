@@ -14,6 +14,9 @@ class _RegressionModel:
     name = None  # 模型名称
     model_method = None  # 模型方法
 
+    coef = None  # 系数
+    intercept = None  # 截距
+
     random_state = None  # 随机种子
     data_name = None  # 数据集名称
     x_train = None  # 训练集自变量
@@ -61,6 +64,8 @@ class _RegressionModel:
     # 训练模型
     def train(self):
         self.model.fit(self.x_train, self.y_train)
+        self.coef = self.model.coef_
+        self.intercept = self.model.intercept_
 
     # 预测
     def predict(self):
@@ -75,7 +80,7 @@ class _RegressionModel:
         plt.show()
 
     # 评估模型
-    def evaluate(self, scatter=True):
+    def evaluate(self):
         self.MSE = np.mean((self.y_pred - self.y_test) ** 2)
         self.RMSE = np.sqrt(self.MSE)
         self.MAE = np.mean(np.abs(self.y_pred - self.y_test))
@@ -141,5 +146,5 @@ class LinearRegression(_RegressionModel):
 
     # 评估模型
     @decorators.cost_record('Class[LinearRegression] Evaluate')
-    def evaluate(self, scatter=True):
-        super().evaluate(scatter)
+    def evaluate(self):
+        super().evaluate()
