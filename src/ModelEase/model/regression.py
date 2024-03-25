@@ -24,8 +24,8 @@ class _RegressionModel:
     y_train = None  # 训练集因变量
     y_test = None  # 测试集因变量
 
-    train_cost = None  # 训练耗时
-    predict_cost = None  # 预测耗时
+    Train_Cost = None  # 训练耗时
+    Predict_Cost = None  # 预测耗时
 
     y_pred = None  # 预测结果
     MSE = None  # 均方误差
@@ -38,8 +38,9 @@ class _RegressionModel:
     def __str__(self):
         return f'{self.name} [{self.data_name}]'
 
-    def __init__(self, data: data_set, name: str = 'Model', random_state: int = None):
-        self.name = name
+    @decorators.cost_record('Init')
+    def __init__(self, data: data_set, name: str = None, random_state: int = None):
+        self.name = name if name is not None else self.__class__.__name__
         # 全局变量model_list注册模型
         model_list[self.name] = dict()
         if random_state is not None:
@@ -58,20 +59,24 @@ class _RegressionModel:
             del model_list[self.name]
 
     # 定义模型
+    @decorators.cost_record('Define Model')
     def define_model(self, **kwargs):
         self.model = self.model_method(**kwargs)
 
     # 训练模型
+    @decorators.cost_record('Train', 'Train')
     def train(self):
         self.model.fit(self.x_train, self.y_train)
         self.coef = self.model.coef_
         self.intercept = self.model.intercept_
 
     # 预测
+    @decorators.cost_record('Predict', 'Predict')
     def predict(self):
         self.y_pred = self.model.predict(self.x_test)
 
     # 绘制训练集和测试集的散点图以及模型的拟合直线
+    @decorators.cost_record('Scatter')
     def scatter(self):
         plt.scatter(self.y_test, self.y_pred)
         plt.plot([self.y_test.min(), self.y_test.max()], [self.y_test.min(), self.y_test.max()], 'k--', lw=4)
@@ -80,6 +85,7 @@ class _RegressionModel:
         plt.show()
 
     # 评估模型
+    @decorators.cost_record('Evaluate')
     def evaluate(self):
         self.MSE = np.mean((self.y_pred - self.y_test) ** 2)
         self.RMSE = np.sqrt(self.MSE)
@@ -88,15 +94,15 @@ class _RegressionModel:
         self.adj_R2 = 1 - (1 - self.R2) * (len(self.y_test) - 1) / (len(self.y_test) - self.x_test.shape[1] - 1)
         self.Explained_Variance = np.var(self.y_pred) / np.var(self.y_test)
 
-        # 全局变量model_list注册模型
-        model_list[self.name] = dict(
-            MSE=self.MSE,
-            RMSE=self.RMSE,
-            MAE=self.MAE,
-            R2=self.R2,
-            adj_R2=self.adj_R2,
-            Explained_Variance=self.Explained_Variance
-        )
+        # 全局变量model_list更新模型评估结果
+        model_list[self.name].update({
+            'MSE': self.MSE,
+            'RMSE': self.RMSE,
+            'MAE': self.MAE,
+            'R2': self.R2,
+            'adj_R2': self.adj_R2,
+            'Explained_Variance': self.Explained_Variance
+        })
 
         # 输出评估结果
         print(f'{self.name} [{self.data_name}]')
@@ -111,40 +117,13 @@ class _RegressionModel:
         self.define_model(**kwargs)
         self.train()
         self.predict()
-        self.evaluate()
         self.scatter()
+        print('coef: ', self.coef)
+        print('intercept: ', self.intercept)
+        self.evaluate()
 
 
 # Linear Regression
 class LinearRegression(_RegressionModel):
     from sklearn.linear_model import LinearRegression
     model_method = LinearRegression
-
-    # 定义构造函数
-    @decorators.cost_record('Class[LinearRegression] Init')
-    def __init__(self, data: data_set, name: str = 'LinearRegression', random_state: int = None):
-        super().__init__(data, name, random_state)
-
-    # 定义模型
-    @decorators.cost_record('Class[LinearRegression] Define Model')
-    def define_model(self, **kwargs):
-        super().define_model(**kwargs)
-
-    # 训练模型
-    @decorators.cost_record('Class[LinearRegression] Train', 'train_cost')
-    def train(self):
-        super().train()
-
-    # 预测
-    @decorators.cost_record('Class[LinearRegression] Predict', 'predict_cost')
-    def predict(self):
-        super().predict()
-
-    @decorators.cost_record('Class[LinearRegression] Scatter')
-    def scatter(self):
-        super().scatter()
-
-    # 评估模型
-    @decorators.cost_record('Class[LinearRegression] Evaluate')
-    def evaluate(self):
-        super().evaluate()

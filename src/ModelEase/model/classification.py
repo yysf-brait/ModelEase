@@ -18,8 +18,8 @@ def comparison(*args) -> pd.DataFrame:
     else:
         ret = {}
         for i in args:
-            ret[i.name] = {'train_cost': i.train_cost if hasattr(i, 'train_cost') else None,
-                           'predict_cost': i.predict_cost if hasattr(i, 'predict_cost') else None,
+            ret[i.name] = {'train_cost': i.Train_Cost if hasattr(i, 'train_cost') else None,
+                           'predict_cost': i.Predict_Cost if hasattr(i, 'predict_cost') else None,
                            'accuracy': i.accuracy if hasattr(i, 'accuracy') else None,
                            'precision': i.precision if hasattr(i, 'precision') else None,
                            'recall': i.recall if hasattr(i, 'recallpip') else None,
