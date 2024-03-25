@@ -113,7 +113,7 @@ pip install -i https://test.pypi.org/simple/ ModelEase
 在开始使用之前，请确保您已准备好相应的数据，并确保已经做好了数据预处理工作。
 
 ```python
-import src.ModelEase as me
+import src.ModelEase as me # noqa
 import pandas as pd
 
 data = pd.read_csv('tests//iris.csv')

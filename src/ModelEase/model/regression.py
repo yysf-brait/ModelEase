@@ -131,12 +131,12 @@ class LinearRegression(_RegressionModel):
         super().define_model(**kwargs)
 
     # 训练模型
-    @decorators.cost_record('Class[LinearRegression] Train')
+    @decorators.cost_record('Class[LinearRegression] Train', 'train_cost')
     def train(self):
         super().train()
 
     # 预测
-    @decorators.cost_record('Class[LinearRegression] Predict')
+    @decorators.cost_record('Class[LinearRegression] Predict', 'predict_cost')
     def predict(self):
         super().predict()
 

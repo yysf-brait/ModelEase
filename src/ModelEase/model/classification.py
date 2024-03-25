@@ -1,5 +1,4 @@
 import time
-import warnings
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -28,7 +27,7 @@ def comparison(*args) -> pd.DataFrame:
     return pd.DataFrame(ret).T
 
 
-class _model:
+class _ClassificationModel:
     """
     模型的基类
     """
@@ -36,8 +35,6 @@ class _model:
     name = None  # 模型名称
     model_method = None  # 模型方法
     best_params = None  # 最佳参数
-    _model_state_list = ['None', 'UnDefined', 'Defined', 'Trained', 'Predicted', 'Evaluated']  # 模型状态列表
-    model_state = None  # 模型状态
 
     random_state = None  # 随机种子
     data_name = None  # 数据集名称
@@ -56,17 +53,15 @@ class _model:
     f1_score = None  # F1分数
 
     def __str__(self):
-        return f'{self.name} [{self.data_name}] [{self.model_state}]'
+        return f'{self.name} [{self.data_name}]'
 
     def __init__(self, data: data_set, name: str = 'Model', random_state: int = None):
-        self.model_state = 'None'
         self.name = name
         # 如果模型名称已存在
         if self.name in model_list:
             raise ValueError('Model name exists. You can use default name or another name.')
         # 全局变量model_list注册模型
-        model_list[self.name] = {'train_cost': None, 'predict_cost': None,
-                                 'accuracy': None, 'recall': None, 'f1_score': None}
+        model_list[self.name] = dict()
         if random_state is not None:
             self.random_state = random_state
         else:
@@ -76,7 +71,6 @@ class _model:
         self.x_test = data.x_test
         self.y_train = data.y_train
         self.y_test = data.y_test
-        self.model_state = 'UnDefined'
 
     def __del__(self):
         # 全局变量model_list销毁模型
@@ -93,11 +87,7 @@ class _model:
 
     # 定义模型
     def define_model(self, **kwargs):
-        # 检查模型状态是否在UnDefined以及之后
-        if self._model_state_list.index(self.model_state) < self._model_state_list.index('Defined') - 1:
-            warnings.warn(f'Model state warning. Model state is {self.model_state} before defining.')
         self.model = self.model_method(**kwargs)
-        self.model_state = 'Defined'
 
     # 使用最佳参数定义模型
     def define_best_params_model(self):
@@ -105,10 +95,7 @@ class _model:
 
     # 训练模型
     def train(self):
-        if self._model_state_list.index(self.model_state) < self._model_state_list.index('Trained') - 1:
-            warnings.warn(f'Model state warning. Model state is {self.model_state} before training.')
         self.model.fit(self.x_train, self.y_train)
-        self.model_state = 'Trained'
 
     # 训练最佳参数
     def train_best_params(self):
@@ -117,17 +104,10 @@ class _model:
 
     # 预测
     def predict(self):
-        if self._model_state_list.index(self.model_state) < self._model_state_list.index('Predicted') - 1:
-            warnings.warn(f'Model state warning. Model state is {self.model_state} before predicting.')
         self.y_pred = self.model.predict(self.x_test)
-        self.model_state = 'Predicted'
 
     # 评估模型
     def evaluate(self, roc: bool = False):
-        if self._model_state_list.index(self.model_state) < self._model_state_list.index('Evaluated') - 1:
-            warnings.warn(f'Model state warning. Model state is {self.model_state} before evaluating.')
-        # 展示预测的类别
-        print(pd.Series(self.y_pred).value_counts())
         # 评估模型
         from sklearn import metrics
         import seaborn as sns
@@ -146,10 +126,12 @@ class _model:
         self.recall = metrics.recall_score(self.y_test, self.y_pred, average='weighted')
         self.f1_score = metrics.f1_score(self.y_test, self.y_pred, average='weighted')
         # 更新全局变量model_list
-        model_list[self.name]['accuracy'] = self.accuracy
-        model_list[self.name]['precision'] = self.precision
-        model_list[self.name]['recall'] = self.recall
-        model_list[self.name]['f1_score'] = self.f1_score
+        model_list[self.name] = dict(
+            accuracy=self.accuracy,
+            precision=self.precision,
+            recall=self.recall,
+            f1_score=self.f1_score
+        )
         # 输出评估结果
         print(f'accuracy: {self.accuracy}')
         print(f'precision: {self.precision}')
@@ -157,7 +139,6 @@ class _model:
         print(f'f1_score: {self.f1_score}')
         if roc:
             self.roc()
-        self.model_state = 'Evaluated'
 
     # ROC曲线
     def roc(self):
@@ -216,7 +197,7 @@ class _model:
 
 
 # 决策树
-class DecisionTree(_model):
+class DecisionTree(_ClassificationModel):
     from sklearn import tree
     model_method = tree.DecisionTreeClassifier
 
@@ -286,7 +267,7 @@ class DecisionTree(_model):
 
 
 # 朴素贝叶斯
-class CNBayes(_model):
+class CNBayes(_ClassificationModel):
     from sklearn import naive_bayes
     model_method = naive_bayes.CategoricalNB
 
@@ -344,7 +325,7 @@ class CNBayes(_model):
 
 
 # 高斯朴素贝叶斯
-class GNBayes(_model):
+class GNBayes(_ClassificationModel):
     from sklearn import naive_bayes
     model_method = naive_bayes.GaussianNB
 
@@ -400,7 +381,7 @@ class GNBayes(_model):
 
 
 # KNN
-class KNN(_model):
+class KNN(_ClassificationModel):
     from sklearn import neighbors
     model_method = neighbors.KNeighborsClassifier
 
@@ -469,7 +450,7 @@ class KNN(_model):
 
 
 # 随机森林
-class RandomForest(_model):
+class RandomForest(_ClassificationModel):
     from sklearn import ensemble
     model_method = ensemble.RandomForestClassifier
 
@@ -547,7 +528,7 @@ class RandomForest(_model):
 
 
 # Adaboost
-class AdaBoost(_model):
+class AdaBoost(_ClassificationModel):
     from sklearn import ensemble
     from sklearn.tree import DecisionTreeClassifier
     model_method = ensemble.AdaBoostClassifier
@@ -622,7 +603,7 @@ class AdaBoost(_model):
 
 
 # 向量机
-class SVM(_model):
+class SVM(_ClassificationModel):
     from sklearn import svm
     model_method = svm.SVC
 

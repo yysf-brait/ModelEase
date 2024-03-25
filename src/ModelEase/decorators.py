@@ -4,7 +4,7 @@ from functools import wraps
 from . import model_list
 
 
-def cost_record(explain: str):
+def cost_record(explain: str = 'Method', record: str = None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -17,12 +17,9 @@ def cost_record(explain: str):
                 return None
             cost = time.time() - start
             print(f'\033[32m{explain} ({func.__name__}) : {cost} s\033[0m')
-            if hasattr(args[0], 'train_cost') and explain.endswith('Train'):
-                args[0].train_cost = cost
-                model_list[args[0].name]['train_cost'] = cost
-            if hasattr(args[0], 'predict_cost') and explain.endswith('Predict'):
-                args[0].predict_cost = cost
-                model_list[args[0].name]['predict_cost'] = cost
+            if record is not None and hasattr(args[0], record):
+                setattr(args[0], record, cost)
+                model_list[args[0].name][record] = cost
             return result
 
         return wrapper
