@@ -1,5 +1,6 @@
-import src.ModelEase as me # noqa
 import pandas as pd
+
+import src.ModelEase as me  # noqa
 
 # 读入calibration数据集
 df = pd.read_csv('tests//regression_test//california.csv')
@@ -17,4 +18,3 @@ print(model.coef, model.intercept)
 model.evaluate()
 
 model.auto()
-

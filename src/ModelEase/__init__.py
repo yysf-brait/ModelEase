@@ -1,4 +1,4 @@
 model_list = {}
 n_jobs = 4
-from .dataSet import * # noqa
+from .dataSet import *  # noqa
 from .model import *  # noqa

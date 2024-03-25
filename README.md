@@ -69,7 +69,9 @@ ModelEase README
 
 - 创建数据集 `me.dataSet.data_set`
 -
+
 创建模型 `me.model.CNBayes`, `me.model.DecisionTree`, `me.model.GNBayes`, `me.model.KNN`, `me.model.RandomForest`, `me.model.AdaBoost`, `me.model.SVM`
+
 - 定义模型 `a_model.define_model`
 - 训练模型 `a_model.train`
 - 搜索最佳参数 `a_model.best_params_search`
