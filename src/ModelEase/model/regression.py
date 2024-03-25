@@ -118,7 +118,7 @@ class _RegressionModel:
         self.train()
         self.predict()
         self.scatter()
-        print('coef: ', self.coef)
+        print('coef: \n', self.coef)
         print('intercept: ', self.intercept)
         self.evaluate()
 
