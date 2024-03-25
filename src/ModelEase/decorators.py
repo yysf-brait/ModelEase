@@ -4,7 +4,7 @@ from functools import wraps
 from . import model_list
 
 
-def cost_record(explain: str = 'Method', record: str = None):
+def cost_record(explain: str = 'Method', record: str | bool = None):
 
     def decorator(func):
         @wraps(func)
@@ -19,8 +19,8 @@ def cost_record(explain: str = 'Method', record: str = None):
                 return None
             cost = time.time() - start
             print(f'\033[32m{s}: {cost} s\033[0m')
-            if record is not None:
-                attr = f'{explain}_Cost'
+            if record is not None and record is not False:
+                attr = f'{record}_Cost' if isinstance(record, str) else f'{explain} Cost'
                 model_list[args[0].name][attr] = cost
                 if hasattr(args[0], attr):
                     setattr(args[0], attr, cost)

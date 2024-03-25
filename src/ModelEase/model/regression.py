@@ -64,14 +64,14 @@ class _RegressionModel:
         self.model = self.model_method(**kwargs)
 
     # 训练模型
-    @decorators.cost_record('Train', 'Train')
+    @decorators.cost_record('Train', True)
     def train(self):
         self.model.fit(self.x_train, self.y_train)
         self.coef = self.model.coef_
         self.intercept = self.model.intercept_
 
     # 预测
-    @decorators.cost_record('Predict', 'Predict')
+    @decorators.cost_record('Predict', True)
     def predict(self):
         self.y_pred = self.model.predict(self.x_test)
 
