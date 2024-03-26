@@ -10,7 +10,7 @@ from ..dataSet import data_set
 
 class _RegressionModel:
     """
-    模型的基类
+    回归模型的基类
     """
     model = None  # 模型
     name = None  # 模型名称
@@ -134,3 +134,14 @@ class _RegressionModel:
 class LinearRegression(_RegressionModel):
     from sklearn.linear_model import LinearRegression
     model_method = LinearRegression
+
+
+# Ridge Regression
+class RidgeRegression(_RegressionModel):
+    from sklearn.linear_model import Ridge
+    model_method = Ridge
+
+    def define_model(self, alpha=1.0, *, fit_intercept=True, copy_X=True, max_iter=None, tol=0.0001, solver='auto',
+                     positive=False, random_state=None):
+        self.model = self.model_method(alpha=alpha, fit_intercept=fit_intercept, copy_X=copy_X, max_iter=max_iter,
+                                       tol=tol, solver=solver, positive=positive, random_state=random_state)

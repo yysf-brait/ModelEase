@@ -1,6 +1,6 @@
 import pandas as pd
 
-import src.ModelEase as me
+import src.ModelEase as me # noqa
 
 # 请注意路径是否正确
 data1 = pd.read_csv('tests//iris.csv')
@@ -53,18 +53,12 @@ Tree.roc()
 # 其他模型的使用方法与上述两个模型基本一致
 
 # 你可以查看并对比已创建的模型的耗时以及效果
-print(me.model.comparison())
+print(me.comparison())
 
-# 你也可以指定me.show()需要展示的模型
-# 使用模型的变量名作为参数
-print(me.model.comparison(Bayes, Tree))
 
 # 撤销模型
 del Bayes
 
-# 使用me.show()查看现有的模型
-print(me.model.comparison())
-# 你会发现贝叶斯模型已经被撤销
 
 # 当然，你也可以通过操作me.model_list来撤销模型
 # 这样只会撤销模型的注册，不会删除变量或者模型本身
@@ -72,9 +66,9 @@ print(me.model.comparison())
 # 如果你再次注册同名模型，会覆盖之前模型的注册，这会导致me.show()无法展示之前的模型
 # 并且指定参数展示模型时，若指定的模型同名，模型会覆盖之前的模型
 # 例如，删除决策树模型
-del me.model.model_list['决策树']
+del me.table['决策树']
 # 使用me.show()查看现有的模型
-print(me.model.comparison())
+print(me.comparison())
 # 你会发现决策树模型已经被撤销
 
 # 你现在可以再注册一个同名的决策树模型了
@@ -88,15 +82,10 @@ Another_Tree.predict()
 # 评估模型，roc参数表示是否绘制roc曲线
 Another_Tree.evaluate(roc=False)
 # 使用me.show()查看现有的模型
-print(me.model.comparison())
+print(me.comparison())
 # 你会发现又有了一个决策树模型
 
-# Tree和Another_Tree是两个不同的模型
-# 但是它们的名字相同，所以me.show()只会展示后载入的模型
-print(me.model.comparison(Tree, Another_Tree))
-# 你会发现只有Another_Tree被展示了
-print(me.model.comparison(Another_Tree, Tree))
-# 你会发现只有Tree被展示了
+
 
 # 这比较复杂，所以不建议进行本操作！
 # 最佳实践就是，每次注册模型时，使用不同的name参数
