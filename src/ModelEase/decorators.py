@@ -1,7 +1,7 @@
 import time
 from functools import wraps
 
-from . import model_list
+from .model import model_list
 
 
 def cost_record(explain: str = 'Method', record: str | bool = None):

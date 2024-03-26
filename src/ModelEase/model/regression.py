@@ -1,8 +1,10 @@
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from .. import decorators
-from .. import model_list
+from . import model_list
 from ..dataSet import data_set
 
 
@@ -40,7 +42,11 @@ class _RegressionModel:
 
     @decorators.cost_record('Init')
     def __init__(self, data: data_set, name: str = None, random_state: int = None):
-        self.name = name if name is not None else self.__class__.__name__
+        if name is None:
+            name = self.__class__.__name__ + time.strftime(' %Y-%m-%d %H:%M:%S', time.localtime())
+        if name in model_list:
+            raise ValueError('Model name exists. You can use default name or another name.')
+        self.name = name
         # 全局变量model_list注册模型
         model_list[self.name] = dict()
         if random_state is not None:
@@ -57,6 +63,7 @@ class _RegressionModel:
         # 全局变量model_list销毁模型
         if self.name in model_list:
             del model_list[self.name]
+            print(f'{self.name} has been deleted from model_list.')
 
     # 定义模型
     @decorators.cost_record('Define Model')

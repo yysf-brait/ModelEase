@@ -1,35 +1,19 @@
-import time
 from typing import List
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 from .. import decorators
-from .. import model_list
-from .. import n_jobs
+from . import model_list
 from ..dataSet import data_set
 
 
-def comparison(*args) -> pd.DataFrame:
-    # 判断是否有参数
-    if len(args) == 0:
-        return pd.DataFrame(model_list).T
-    else:
-        ret = {}
-        for i in args:
-            ret[i.name] = {'train_cost': i.Train_Cost if hasattr(i, 'train_cost') else None,
-                           'predict_cost': i.Predict_Cost if hasattr(i, 'predict_cost') else None,
-                           'accuracy': i.accuracy if hasattr(i, 'accuracy') else None,
-                           'precision': i.precision if hasattr(i, 'precision') else None,
-                           'recall': i.recall if hasattr(i, 'recallpip') else None,
-                           'f1_score': i.f1_score if hasattr(i, 'f1_score') else None}
-    return pd.DataFrame(ret).T
+
 
 
 class _ClassificationModel:
     """
-    模型的基类
+    分类模型的基类
     """
     model = None  # 模型
     name = None  # 模型名称
@@ -43,8 +27,8 @@ class _ClassificationModel:
     y_train = None  # 训练集因变量
     y_test = None  # 测试集因变量
 
-    train_cost = None  # 训练耗时
-    predict_cost = None  # 预测耗时
+    Train_Cost = None  # 训练耗时
+    Predict_Cost = None  # 预测耗时
 
     y_pred = None  # 预测结果
     accuracy = None  # 准确率
@@ -55,11 +39,14 @@ class _ClassificationModel:
     def __str__(self):
         return f'{self.name} [{self.data_name}]'
 
-    def __init__(self, data: data_set, name: str = 'Model', random_state: int = None):
-        self.name = name
-        # 如果模型名称已存在
-        if self.name in model_list:
+    @decorators.cost_record('Init')
+    def __init__(self, data: data_set, name: str = None, random_state: int = None):
+        if name is None:
+            import time
+            name = self.__class__.__name__ + time.strftime(' %Y-%m-%d %H:%M:%S', time.localtime())
+        if name in model_list:
             raise ValueError('Model name exists. You can use default name or another name.')
+        self.name = name
         # 全局变量model_list注册模型
         model_list[self.name] = dict()
         if random_state is not None:
@@ -76,24 +63,30 @@ class _ClassificationModel:
         # 全局变量model_list销毁模型
         if self.name in model_list:
             del model_list[self.name]
+            print(f'{self.name} has been deleted from model_list.')
 
     # 搜索最佳参数
+    @decorators.cost_record('Search Best Params')
     def best_params_search(self, **param_grid):
         from sklearn.model_selection import GridSearchCV
+        from .. import n_jobs
         grid = GridSearchCV(self.model_method(), param_grid, refit=False, verbose=1, n_jobs=n_jobs)
         grid.fit(self.x_train, self.y_train)
         self.best_params = grid.best_params_
         print('best params:', self.best_params)
 
     # 定义模型
+    @decorators.cost_record('Define Model')
     def define_model(self, **kwargs):
         self.model = self.model_method(**kwargs)
 
     # 使用最佳参数定义模型
+    @decorators.cost_record('Define Model - Best Params')
     def define_best_params_model(self):
         self.define_model(**self.best_params)
 
     # 训练模型
+    @decorators.cost_record('Train', True)
     def train(self):
         self.model.fit(self.x_train, self.y_train)
 
@@ -103,10 +96,12 @@ class _ClassificationModel:
         self.train()
 
     # 预测
+    @decorators.cost_record('Predict', True)
     def predict(self):
         self.y_pred = self.model.predict(self.x_test)
 
     # 评估模型
+    @decorators.cost_record('Evaluate')
     def evaluate(self, roc: bool = False):
         # 评估模型
         from sklearn import metrics
@@ -195,23 +190,19 @@ class _ClassificationModel:
             plt.legend(loc="lower right")
             plt.show()
 
+    def auto(self, **kwargs):
+        self.define_model(**kwargs)
+        self.train()
+        self.predict()
+        self.evaluate(roc=True)
+
 
 # 决策树
 class DecisionTree(_ClassificationModel):
     from sklearn import tree
     model_method = tree.DecisionTreeClassifier
 
-    # 定义构造函数
-    @decorators.cost_record('Class[DecisionTree] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'DecisionTree' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
-
     # 搜索最佳参数
-    @decorators.cost_record('DecisionTree-BestParamsSearch')
     def best_params_search(self, criterion: List[str] = None,
                            max_depth: List[int] = None,
                            min_samples_split: List[int] = None,
@@ -230,55 +221,16 @@ class DecisionTree(_ClassificationModel):
                                    min_samples_leaf=min_samples_leaf)
 
     # 定义模型
-    @decorators.cost_record('DecisionTree-DefineModel')
     def define_model(self, criterion: str = 'gini', max_depth: int = None, min_samples_split: int = 2,
                      min_samples_leaf: int = 1, random_state: int = None):
         super().define_model(criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split,
                              min_samples_leaf=min_samples_leaf, random_state=random_state)
-
-    # 使用最佳参数定义模型
-    @decorators.cost_record('DecisionTree-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('DecisionTree-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('DecisionTree-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('DecisionTree-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('DecisionTree-ROC')
-    def roc(self):
-        super().roc()
 
 
 # 朴素贝叶斯
 class CNBayes(_ClassificationModel):
     from sklearn import naive_bayes
     model_method = naive_bayes.CategoricalNB
-
-    # 定义构造函数
-    @decorators.cost_record('Class[CNBayes] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'CNBayes' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
 
     # 搜索最佳参数
     @decorators.cost_record('CNBayes-BestParamsSearch')
@@ -294,49 +246,16 @@ class CNBayes(_ClassificationModel):
     def define_model(self, alpha: float = 1.0, fit_prior: bool = True):
         super().define_model(alpha=alpha, fit_prior=fit_prior)
 
-    # 使用最佳参数定义模型
-    @decorators.cost_record('CNBayes-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('CNBayes-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('CNBayes-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('CNBayes-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('CNBayes-ROC')
-    def roc(self):
-        super().roc()
-
 
 # 高斯朴素贝叶斯
 class GNBayes(_ClassificationModel):
     from sklearn import naive_bayes
     model_method = naive_bayes.GaussianNB
 
-    # 定义构造函数
-    @decorators.cost_record('Class[GNBayes] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'GNBayes' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
+    # 定义模型
+    @decorators.cost_record('GNBayes-DefineModel')
+    def define_model(self, var_smoothing: float = 1e-9):
+        super().define_model(var_smoothing=var_smoothing)
 
     # 搜索最佳参数
     @decorators.cost_record('GNBayes-BestParamsSearch')
@@ -345,60 +264,18 @@ class GNBayes(_ClassificationModel):
             var_smoothing = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
         super().best_params_search(var_smoothing=var_smoothing)
 
-    # 定义模型
-    @decorators.cost_record('GNBayes-DefineModel')
-    def define_model(self):
-        super().define_model()
-
-    # 使用最佳参数定义模型
-    @decorators.cost_record('GNBayes-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('GNBayes-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('GNBayes-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('GNBayes-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('GNBayes-ROC')
-    def roc(self):
-        super().roc()
-
 
 # KNN
 class KNN(_ClassificationModel):
     from sklearn import neighbors
     model_method = neighbors.KNeighborsClassifier
 
-    # 定义构造函数
-    @decorators.cost_record('Class[KNN] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'KNN' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
-
     # 搜索最佳参数
     @decorators.cost_record('KNN-BestParamsSearch')
     def best_params_search(self, n_neighbors: List[int] = None, weights: List[str] = None,
                            algorithm: List[str] = None, leaf_size: List[int] = None, p: List[int] = None):
         if n_neighbors is None:
+            import numpy as np
             n_neighbors = [i for i in
                            range(1, min(20, int(np.ceil(np.log2(self.x_test.shape[0] + self.x_train.shape[0])))))]
         if weights is None:
@@ -419,49 +296,11 @@ class KNN(_ClassificationModel):
         super().define_model(n_neighbors=n_neighbors, weights=weights, algorithm=algorithm,
                              leaf_size=leaf_size, p=p)
 
-    # 使用最佳参数定义模型
-    @decorators.cost_record('KNN-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('KNN-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('KNN-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('KNN-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('KNN-ROC')
-    def roc(self):
-        super().roc()
-
 
 # 随机森林
 class RandomForest(_ClassificationModel):
     from sklearn import ensemble
     model_method = ensemble.RandomForestClassifier
-
-    # 定义构造函数
-    @decorators.cost_record('Class[RandomForest] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'RandomForest' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
 
     # 搜索最佳参数
     @decorators.cost_record('RandomForest-BestParamsSearch')
@@ -497,50 +336,12 @@ class RandomForest(_ClassificationModel):
                              min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf,
                              max_features=max_features, random_state=random_state)
 
-    # 使用最佳参数定义模型
-    @decorators.cost_record('RandomForest-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('RandomForest-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('RandomForest-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('RandomForest-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('RandomForest-ROC')
-    def roc(self):
-        super().roc()
-
 
 # Adaboost
 class AdaBoost(_ClassificationModel):
     from sklearn import ensemble
     from sklearn.tree import DecisionTreeClassifier
     model_method = ensemble.AdaBoostClassifier
-
-    # 定义构造函数
-    @decorators.cost_record('Class[AdaBoost] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'AdaBoost' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
 
     # 搜索最佳参数
     @decorators.cost_record('AdaBoost-BestParamsSearch')
@@ -572,49 +373,11 @@ class AdaBoost(_ClassificationModel):
                              random_state=random_state,
                              algorithm='SAMME')
 
-    # 使用最佳参数定义模型
-    @decorators.cost_record('AdaBoost-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('AdaBoost-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('AdaBoost-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('AdaBoost-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('AdaBoost-ROC')
-    def roc(self):
-        super().roc()
-
 
 # 向量机
 class SVM(_ClassificationModel):
     from sklearn import svm
     model_method = svm.SVC
-
-    # 定义构造函数
-    @decorators.cost_record('Class[SVM] Init')
-    def __init__(self, data: data_set,
-                 name: str = None,
-                 random_state: int = None):
-        if name is None:
-            name = 'SVM' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        super().__init__(data, name, random_state)
 
     # 搜索最佳参数
     @decorators.cost_record('SVM-BestParamsSearch')
@@ -641,32 +404,3 @@ class SVM(_ClassificationModel):
                      random_state: int = None):
         super().define_model(C=c, kernel=kernel, degree=degree, gamma=gamma, random_state=random_state,
                              probability=True)
-
-    # 使用最佳参数定义模型
-    @decorators.cost_record('SVM-DefineBestParamsModel')
-    def define_best_params_model(self):
-        super().define_best_params_model()
-
-    # 训练模型
-    @decorators.cost_record('SVM-Train')
-    def train(self):
-        super().train()
-
-    # 训练最佳参数
-    def train_best_params(self):
-        super().train_best_params()
-
-    # 预测
-    @decorators.cost_record('SVM-Predict')
-    def predict(self):
-        super().predict()
-
-    # 评估模型
-    @decorators.cost_record('SVM-Evaluate')
-    def evaluate(self, roc: bool = False):
-        super().evaluate(roc)
-
-    # ROC曲线
-    @decorators.cost_record('SVM-ROC')
-    def roc(self):
-        super().roc()
