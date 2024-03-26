@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .. import decorators
-from . import model_list
+from .. import table
 from ..dataSet import data_set
 
 
@@ -44,11 +44,11 @@ class _RegressionModel:
     def __init__(self, data: data_set, name: str = None, random_state: int = None):
         if name is None:
             name = self.__class__.__name__ + time.strftime(' %Y-%m-%d %H:%M:%S', time.localtime())
-        if name in model_list:
+        if name in table:
             raise ValueError('Model name exists. You can use default name or another name.')
         self.name = name
-        # 全局变量model_list注册模型
-        model_list[self.name] = dict()
+        # 全局变量table注册模型
+        table[self.name] = dict()
         if random_state is not None:
             self.random_state = random_state
         else:
@@ -60,10 +60,10 @@ class _RegressionModel:
         self.y_test = data.y_test
 
     def __del__(self):
-        # 全局变量model_list销毁模型
-        if self.name in model_list:
-            del model_list[self.name]
-            print(f'{self.name} has been deleted from model_list.')
+        # 全局变量table销毁模型
+        if self.name in table:
+            del table[self.name]
+            print(f'{self.name} has been deleted from table.')
 
     # 定义模型
     @decorators.cost_record('Define Model')
@@ -101,8 +101,8 @@ class _RegressionModel:
         self.adj_R2 = 1 - (1 - self.R2) * (len(self.y_test) - 1) / (len(self.y_test) - self.x_test.shape[1] - 1)
         self.Explained_Variance = np.var(self.y_pred) / np.var(self.y_test)
 
-        # 全局变量model_list更新模型评估结果
-        model_list[self.name].update({
+        # 全局变量table更新模型评估结果
+        table[self.name].update({
             'MSE': self.MSE,
             'RMSE': self.RMSE,
             'MAE': self.MAE,

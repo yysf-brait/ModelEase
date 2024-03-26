@@ -4,11 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from .. import decorators
-from . import model_list
+from .. import table
 from ..dataSet import data_set
-
-
-
 
 
 class _ClassificationModel:
@@ -44,11 +41,11 @@ class _ClassificationModel:
         if name is None:
             import time
             name = self.__class__.__name__ + time.strftime(' %Y-%m-%d %H:%M:%S', time.localtime())
-        if name in model_list:
+        if name in table:
             raise ValueError('Model name exists. You can use default name or another name.')
         self.name = name
-        # 全局变量model_list注册模型
-        model_list[self.name] = dict()
+        # 全局变量table注册模型
+        table[self.name] = dict()
         if random_state is not None:
             self.random_state = random_state
         else:
@@ -60,10 +57,10 @@ class _ClassificationModel:
         self.y_test = data.y_test
 
     def __del__(self):
-        # 全局变量model_list销毁模型
-        if self.name in model_list:
-            del model_list[self.name]
-            print(f'{self.name} has been deleted from model_list.')
+        # 全局变量table销毁模型
+        if self.name in table:
+            del table[self.name]
+            print(f'{self.name} has been deleted from table.')
 
     # 搜索最佳参数
     @decorators.cost_record('Search Best Params')
@@ -120,8 +117,8 @@ class _ClassificationModel:
         self.precision = metrics.precision_score(self.y_test, self.y_pred, average='weighted')
         self.recall = metrics.recall_score(self.y_test, self.y_pred, average='weighted')
         self.f1_score = metrics.f1_score(self.y_test, self.y_pred, average='weighted')
-        # 更新全局变量model_list
-        model_list[self.name] = dict(
+        # 更新全局变量table
+        table[self.name] = dict(
             accuracy=self.accuracy,
             precision=self.precision,
             recall=self.recall,
