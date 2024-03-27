@@ -118,7 +118,7 @@ class _ClassificationModel:
         self.recall = metrics.recall_score(self.y_test, self.y_pred, average='weighted')
         self.f1_score = metrics.f1_score(self.y_test, self.y_pred, average='weighted')
         # 更新全局变量table
-        table[self.name] = dict(
+        table[self.name].update(
             accuracy=self.accuracy,
             precision=self.precision,
             recall=self.recall,
@@ -187,9 +187,13 @@ class _ClassificationModel:
             plt.legend(loc="lower right")
             plt.show()
 
-    def auto(self, **kwargs):
-        self.define_model(**kwargs)
-        self.train()
+    def auto(self, search_best_params: bool = False, **kwargs):
+        if search_best_params:
+            self.best_params_search(**kwargs)
+            self.train_best_params()
+        else:
+            self.define_model(**kwargs)
+            self.train()
         self.predict()
         self.evaluate(roc=True)
 
@@ -316,7 +320,7 @@ class RandomForest(_ClassificationModel):
         if min_samples_leaf is None:
             min_samples_leaf = [1, 2, 4]
         if max_features is None:
-            max_features = ['sqrt', 'log2', None]
+            max_features = ['sqrt', 'log2']
         if random_state is None:
             random_state = [self.random_state]
         super().best_params_search(n_estimators=n_estimators, criterion=criterion,
@@ -327,7 +331,7 @@ class RandomForest(_ClassificationModel):
     # 定义模型
     @decorators.cost_record('RandomForest-DefineModel')
     def define_model(self, n_estimators: int = 100, criterion: str = 'gini', max_depth: int = None,
-                     min_samples_split: int = 2, min_samples_leaf: int = 1, max_features: str = 'auto',
+                     min_samples_split: int = 2, min_samples_leaf: int = 1, max_features: str = 'sqrt',
                      random_state: int = None):
         super().define_model(n_estimators=n_estimators, criterion=criterion, max_depth=max_depth,
                              min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf,
@@ -363,12 +367,13 @@ class AdaBoost(_ClassificationModel):
     def define_model(self, estimator: DecisionTreeClassifier = None,
                      n_estimators: int = 50,
                      learning_rate: float = 1.0,
+                     algorithm: str = 'SAMME',
                      random_state: int = None):
         super().define_model(estimator=estimator,
                              n_estimators=n_estimators,
                              learning_rate=learning_rate,
-                             random_state=random_state,
-                             algorithm='SAMME')
+                             algorithm=algorithm,
+                             random_state=random_state)
 
 
 # 向量机
@@ -378,11 +383,12 @@ class SVM(_ClassificationModel):
 
     # 搜索最佳参数
     @decorators.cost_record('SVM-BestParamsSearch')
-    def best_params_search(self, c: List[float] = None, kernel: List[str] = None,
+    def best_params_search(self, C: List[float] = None, # noqa
+                           kernel: List[str] = None,
                            degree: List[int] = None, gamma: List[str] = None,
                            random_state: List[int] = None):
-        if c is None:
-            c = [0.1, 1, 10]
+        if C is None:
+            C = [0.1, 1, 10]
         if kernel is None:
             kernel = ['rbf']
         if degree is None:
@@ -391,13 +397,14 @@ class SVM(_ClassificationModel):
             gamma = ['scale', 'auto']
         if random_state is None:
             random_state = [self.random_state]
-        super().best_params_search(C=c, kernel=kernel, degree=degree,
+        super().best_params_search(C=C, kernel=kernel, degree=degree,
                                    gamma=gamma, random_state=random_state,
                                    probability=[True])
 
     # 定义模型
     @decorators.cost_record('SVM-DefineModel')
-    def define_model(self, c: float = 1.0, kernel: str = 'rbf', degree: int = 3, gamma: str = 'scale',
-                     random_state: int = None):
-        super().define_model(C=c, kernel=kernel, degree=degree, gamma=gamma, random_state=random_state,
-                             probability=True)
+    def define_model(self, C: float = 1.0, # noqa
+                     kernel: str = 'rbf', degree: int = 3, gamma: str = 'scale',
+                     random_state: int = None, probability: bool = True):
+        super().define_model(C=C, kernel=kernel, degree=degree, gamma=gamma, random_state=random_state,
+                             probability=probability)
