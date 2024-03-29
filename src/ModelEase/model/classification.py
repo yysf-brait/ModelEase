@@ -75,10 +75,10 @@ class _ClassificationModel:
     # 定义模型
     @decorators.cost_record('Define Model')
     def define_model(self, **kwargs):
+        print('model params:', kwargs)
         self.model = self.model_method(**kwargs)
 
     # 使用最佳参数定义模型
-    @decorators.cost_record('Define Model - Best Params')
     def define_best_params_model(self):
         self.define_model(**self.best_params)
 

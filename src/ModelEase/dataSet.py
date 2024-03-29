@@ -29,7 +29,7 @@ class data_set:
     def __str__(self):
         return f'{self.name} [{self.state}]'
 
-    @decorators.cost_record('Class[Data] Init')
+    @decorators.cost_record('Init')
     def __init__(self, data: pd.DataFrame, x_index: list, y_index: int,
                  random_state: int = 0, test_size: float = 0,
                  make: bool = True,
@@ -78,7 +78,7 @@ class data_set:
             self.state = 'Made'
 
     # 使用data制作数据集
-    @decorators.cost_record('Data_Set Make')
+    @decorators.cost_record('Make')
     def make(self):
         # 初始化self.data，第一列为y，其余为x
         # 提取自变量
