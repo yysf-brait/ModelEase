@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .. import decorators
+from .. import n_jobs
 from .. import table
 from ..dataSet import data_set
 
@@ -16,8 +17,7 @@ class _RegressionModel:
     name = None  # 模型名称
     model_method = None  # 模型方法
 
-    coef = None  # 系数
-    intercept = None  # 截距
+    feature_contribution = None  # 特征贡献度
 
     random_state = None  # 随机种子
     data_name = None  # 数据集名称
@@ -70,12 +70,14 @@ class _RegressionModel:
     def define_model(self, **kwargs):
         self.model = self.model_method(**kwargs)
 
+    # 获取特征贡献度
+    def record_feature_contribution(self):
+        pass
+
     # 训练模型
     @decorators.cost_record('Train', True)
     def train(self):
         self.model.fit(self.x_train, self.y_train)
-        self.coef = self.model.coef_
-        self.intercept = self.model.intercept_
 
     # 预测
     @decorators.cost_record('Predict', True)
@@ -94,6 +96,9 @@ class _RegressionModel:
     # 评估模型
     @decorators.cost_record('Evaluate')
     def evaluate(self):
+        self.record_feature_contribution()
+        if self.feature_contribution:
+            print(f'feature_contribution: {self.feature_contribution}')
         self.MSE = np.mean((self.y_pred - self.y_test) ** 2)
         self.RMSE = np.sqrt(self.MSE)
         self.MAE = np.mean(np.abs(self.y_pred - self.y_test))
@@ -120,13 +125,15 @@ class _RegressionModel:
         print(f'adj_R2: {self.adj_R2}')
         print(f'Explained_Variance: {self.Explained_Variance}')
 
+    # 模型应用于给定数据集
+    def apply(self, x):
+        return self.model.predict(x)
+
     def auto(self, **kwargs):
         self.define_model(**kwargs)
         self.train()
         self.predict()
         self.scatter()
-        print('coef: \n', self.coef)
-        print('intercept: ', self.intercept)
         self.evaluate()
 
 
@@ -135,13 +142,107 @@ class LinearRegression(_RegressionModel):
     from sklearn.linear_model import LinearRegression
     model_method = LinearRegression
 
+    def record_feature_contribution(self):
+        self.feature_contribution = dict()
+        self.feature_contribution['coef'] = self.model.coef_
+        self.feature_contribution['intercept'] = self.model.intercept_
+
 
 # Ridge Regression
 class RidgeRegression(_RegressionModel):
     from sklearn.linear_model import Ridge
     model_method = Ridge
 
-    def define_model(self, alpha=1.0, *, fit_intercept=True, copy_X=True, max_iter=None, tol=0.0001, solver='auto',
+    def define_model(self, alpha=1.0, *, fit_intercept=True, max_iter=None, tol=0.0001, solver='auto',
                      positive=False, random_state=None):
-        self.model = self.model_method(alpha=alpha, fit_intercept=fit_intercept, copy_X=copy_X, max_iter=max_iter,
+        self.model = self.model_method(alpha=alpha, fit_intercept=fit_intercept, copy_X=True, max_iter=max_iter,
                                        tol=tol, solver=solver, positive=positive, random_state=random_state)
+
+    def record_feature_contribution(self):
+        self.feature_contribution = dict()
+        self.feature_contribution['coef'] = self.model.coef_
+        self.feature_contribution['intercept'] = self.model.intercept_
+
+
+# Decision Tree Regression
+class DecisionTreeRegression(_RegressionModel):
+    from sklearn.tree import DecisionTreeRegressor
+    model_method = DecisionTreeRegressor
+
+    def define_model(self, criterion='squared_error', splitter='best', max_depth=None, min_samples_split=2,
+                     min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None, random_state=None,
+                     max_leaf_nodes=None, min_impurity_decrease=0.0, ccp_alpha=0.0, monotonic_cst=None):
+        """
+        criterion: {"squared_error", "friedman_mse", "absolute_error", "poisson"}, default="squared_error"
+        splitter: {"best", "random"}, default="best"
+        max_depth: int, default=None
+        min_samples_split: int or float, default=2
+        min_samples_leaf: int or float, default=1
+        min_weight_fraction_leaf: float, default=0.0
+        max_features: int, float or {"sqrt", "log2"}, default=None
+        random_state: int, RandomState instance or None, default=model.random_state
+        max_leaf_nodes: int, default=None
+        min_impurity_decrease: float, default=0.0
+        ccp_alpha: non-negative float, default=0.0
+        monotonic_cst: array-like of int of shape (n_features), default=None
+        """
+        self.model = self.model_method(criterion=criterion, splitter=splitter, max_depth=max_depth,
+                                       min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf,
+                                       min_weight_fraction_leaf=min_weight_fraction_leaf, max_features=max_features,
+                                       random_state=random_state, max_leaf_nodes=max_leaf_nodes,
+                                       min_impurity_decrease=min_impurity_decrease, ccp_alpha=ccp_alpha,
+                                       monotonic_cst=monotonic_cst)
+
+    def record_feature_contribution(self):
+        self.feature_contribution = self.model.feature_importances_
+
+
+# SVR
+class SVR(_RegressionModel):
+    from sklearn.svm import SVR
+    model_method = SVR
+
+    def define_model(self, kernel='rbf', degree=3, gamma='scale', coef0=0.0, tol=0.001, C=1.0, epsilon=0.1,
+                     shrinking=True, cache_size=200, verbose=False, max_iter=-1):
+        """
+        kernel: {'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'}, default='rbf'
+        degree: int, default=3
+        gamma: {'scale', 'auto'} or float, default='scale'
+        coef0: float, default=0.0
+        tol: float, default=1e-3
+        C: float, default=1.0
+        epsilon: float, default=0.1
+        shrinking: bool, default=True
+        cache_size: float, default=200
+        verbose: bool, default=False
+        max_iter: int, default=-1
+        """
+        self.model = self.model_method(kernel=kernel, degree=degree, gamma=gamma, coef0=coef0, tol=tol, C=C,
+                                       epsilon=epsilon, shrinking=shrinking, cache_size=cache_size, verbose=verbose,
+                                       max_iter=max_iter)
+
+    def record_feature_contribution(self):
+        if self.model.get_params()['kernel'] == 'linear':
+            self.feature_contribution['coef_'] = self.model.coef_
+            self.feature_contribution['intercept_'] = self.model.intercept_
+
+
+# KNN
+class KNN(_RegressionModel):
+    from sklearn.neighbors import KNeighborsRegressor
+    model_method = KNeighborsRegressor
+
+    def define_model(self, n_neighbors=5, weights='uniform', algorithm='auto', leaf_size=30, p=2, metric='minkowski',
+                     metric_params=None):
+        """
+        n_neighbors: int, default=5
+        weights: {'uniform', 'distance'} or callable, default='uniform'
+        algorithm: {'auto', 'ball_tree', 'kd_tree', 'brute'}, default='auto'
+        leaf_size: int, default=30
+        p: int, default=2
+        metric: str or callable, default='minkowski'
+        metric_params: dict, default=None
+        """
+        self.model = self.model_method(n_neighbors=n_neighbors, weights=weights, algorithm=algorithm,
+                                       leaf_size=leaf_size,
+                                       p=p, metric=metric, metric_params=metric_params, n_jobs=n_jobs)
