@@ -16,7 +16,7 @@ me.n_jobs = 16
 # 如果没有，路径切换到tests/classification_test，读入数据集
 if not os.path.exists('california.csv'):
     os.chdir('tests//regression_test')
-df = pd.read_csv('california.csv').iloc[:500, :]
+df = pd.read_csv('california.csv').iloc[:100, :]
 
 # 创建数据集
 data = me.data_set(df, x_index=[0, 1, 2, 3, 4, 5, 6, 7], y_index=8, test_size=0.2, name='California Housing')
@@ -32,6 +32,14 @@ Ridge.auto()
 # Decision Tree Regression
 DecisionTree = me.model.regression.DecisionTreeRegression(data, name='Decision Tree Regression')
 DecisionTree.auto()
+
+# Random Forest Regression
+RandomForest = me.model.regression.RandomForestRegression(data, name='Random Forest Regression')
+RandomForest.auto()
+
+# AdaBoost Regression
+AdaBoost = me.model.regression.AdaBoostRegression(data, name='AdaBoost Regression')
+AdaBoost.auto()
 
 # SVM Regression
 SVR = me.model.regression.SVR(data, name='SVM Regression')

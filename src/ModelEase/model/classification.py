@@ -408,3 +408,35 @@ class SVM(_ClassificationModel):
                      random_state: int = None, probability: bool = True):
         super().define_model(C=C, kernel=kernel, degree=degree, gamma=gamma, random_state=random_state,
                              probability=probability)
+
+# 逻辑回归
+class LogisticRegression(_ClassificationModel):
+    from sklearn import linear_model
+    model_method = linear_model.LogisticRegression
+
+    # 搜索最佳参数
+    @decorators.cost_record('LogisticRegression-BestParamsSearch')
+    def best_params_search(self, penalty: List[str] = None, # noqa
+                           C: List[float] = None,
+                           solver: List[str] = None,
+                           max_iter: List[int] = None,
+                           random_state: List[int] = None):
+        if penalty is None:
+            penalty = ['l1', 'l2']
+        if C is None:
+            C = [0.1, 1, 10]
+        if solver is None:
+            solver = ['liblinear', 'saga']
+        if max_iter is None:
+            max_iter = [100, 200, 300, 400]
+        if random_state is None:
+            random_state = [self.random_state]
+        super().best_params_search(penalty=penalty, C=C, solver=solver,
+                                   max_iter=max_iter, random_state=random_state)
+
+    # 定义模型
+    @decorators.cost_record('LogisticRegression-DefineModel')
+    def define_model(self, penalty: str = 'l2',
+                     C: float = 1.0, solver: str = 'liblinear',
+                     max_iter: int = 100, random_state: int = None):
+        super().define_model(penalty=penalty, C=C, solver=solver, max_iter=max_iter, random_state=random_state)

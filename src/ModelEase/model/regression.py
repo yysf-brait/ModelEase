@@ -33,6 +33,9 @@ class _RegressionModel:
     MSE = None  # 均方误差
     RMSE = None  # 均方根误差
     MAE = None  # 平均绝对误差
+    MAPE = None  # 平均绝对百分比误差
+    SMAPE = None  # 对称平均绝对百分比误差
+    RMSPE = None  # 根均方百分比误差
     R2 = None  # R2
     adj_R2 = None  # 调整R2
     Explained_Variance = None  # 解释方差
@@ -97,11 +100,14 @@ class _RegressionModel:
     @decorators.cost_record('Evaluate')
     def evaluate(self):
         self.record_feature_contribution()
-        if self.feature_contribution:
+        if self.feature_contribution is not None:
             print(f'feature_contribution: {self.feature_contribution}')
         self.MSE = np.mean((self.y_pred - self.y_test) ** 2)
         self.RMSE = np.sqrt(self.MSE)
         self.MAE = np.mean(np.abs(self.y_pred - self.y_test))
+        self.MAPE = np.mean(np.abs((self.y_pred - self.y_test) / self.y_test))
+        self.SMAPE = 2 * np.mean(np.abs(self.y_pred - self.y_test) / (np.abs(self.y_pred) + np.abs(self.y_test)))
+        self.RMSPE = np.sqrt(np.mean(((self.y_pred - self.y_test) / self.y_test) ** 2))
         self.R2 = self.model.score(self.x_test, self.y_test)
         self.adj_R2 = 1 - (1 - self.R2) * (len(self.y_test) - 1) / (len(self.y_test) - self.x_test.shape[1] - 1)
         self.Explained_Variance = np.var(self.y_pred) / np.var(self.y_test)
@@ -111,6 +117,9 @@ class _RegressionModel:
             'MSE': self.MSE,
             'RMSE': self.RMSE,
             'MAE': self.MAE,
+            'MAPE': self.MAPE,
+            'SMAPE': self.SMAPE,
+            'RMSPE': self.RMSPE,
             'R2': self.R2,
             'adj_R2': self.adj_R2,
             'Explained_Variance': self.Explained_Variance
@@ -121,6 +130,9 @@ class _RegressionModel:
         print(f'MSE: {self.MSE}')
         print(f'RMSE: {self.RMSE}')
         print(f'MAE: {self.MAE}')
+        print(f'MAPE: {self.MAPE}')
+        print(f'SMAPE: {self.SMAPE}')
+        print(f'RMSPE: {self.RMSPE}')
         print(f'R2: {self.R2}')
         print(f'adj_R2: {self.adj_R2}')
         print(f'Explained_Variance: {self.Explained_Variance}')
@@ -192,6 +204,68 @@ class DecisionTreeRegression(_RegressionModel):
                                        random_state=random_state, max_leaf_nodes=max_leaf_nodes,
                                        min_impurity_decrease=min_impurity_decrease, ccp_alpha=ccp_alpha,
                                        monotonic_cst=monotonic_cst)
+
+    def record_feature_contribution(self):
+        self.feature_contribution = self.model.feature_importances_
+
+
+# Random Forest Regression
+class RandomForestRegression(_RegressionModel):
+    from sklearn.ensemble import RandomForestRegressor
+    model_method = RandomForestRegressor
+
+    def define_model(self, n_estimators=100, *, criterion='squared_error', max_depth=None, min_samples_split=2,
+                     min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=1.0, max_leaf_nodes=None,
+                     min_impurity_decrease=0.0, bootstrap=True, oob_score=False, random_state=None,
+                     verbose=0, warm_start=False, ccp_alpha=0.0, max_samples=None, monotonic_cst=None):
+        """
+        n_estimators: int, default=100
+        criterion: {"squared_error", "friedman_mse", "absolute_error", "poisson"}, default="squared_error"
+        max_depth: int, default=None
+        min_samples_split: int or float, default=2
+        min_samples_leaf: int or float, default=1
+        min_weight_fraction_leaf: float, default=0.0
+        max_features: int, float or {"sqrt", "log2"}, default=1.0
+        max_leaf_nodes: int, default=None
+        min_impurity_decrease: float, default=0.0
+        bootstrap: bool, default=True
+        oob_score: bool, default=False
+        random_state: int, RandomState instance or None, default=model.random_state
+        verbose: int, default=0
+        warm_start: bool, default=False
+        ccp_alpha: non-negative float, default=0.0
+        max_samples: int or float, default=None
+        monotonic_cst: array-like of int of shape (n_features), default=None
+        """
+        self.model = self.model_method(n_estimators=n_estimators, criterion=criterion, max_depth=max_depth,
+                                       min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf,
+                                       min_weight_fraction_leaf=min_weight_fraction_leaf, max_features=max_features,
+                                       max_leaf_nodes=max_leaf_nodes, min_impurity_decrease=min_impurity_decrease,
+                                       bootstrap=bootstrap, oob_score=oob_score, random_state=random_state,
+                                       verbose=verbose,
+                                       warm_start=warm_start, ccp_alpha=ccp_alpha, max_samples=max_samples,
+                                       monotonic_cst=monotonic_cst)
+
+    def record_feature_contribution(self):
+        self.feature_contribution = self.model.feature_importances_
+
+
+# AdaBoost Regression
+class AdaBoostRegression(_RegressionModel):
+    from sklearn.ensemble import AdaBoostRegressor
+    model_method = AdaBoostRegressor
+
+    def define_model(self, estimator=None, *, n_estimators=50, learning_rate=1.0, loss='linear', random_state=None):
+        """
+        estimator: object, default=None
+        n_estimators: int, default=50
+        learning_rate: float, default=1.0
+        loss{‘linear’, ‘square’, ‘exponential’}, default=’linear’
+        random_state: int, RandomState instance or None, default=model.random_state
+        """
+        self.model = self.model_method(estimator=estimator, n_estimators=n_estimators,
+                                       learning_rate=learning_rate,
+                                       loss=loss, random_state=random_state)
 
     def record_feature_contribution(self):
         self.feature_contribution = self.model.feature_importances_

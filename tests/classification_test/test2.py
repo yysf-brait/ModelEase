@@ -50,4 +50,8 @@ AdaBoost.auto(search_best_params=True)
 SVM = me.model.classification.SVM(data, name='SVM')
 SVM.auto(search_best_params=True)
 
+# LogisticRegression
+LogisticRegression = me.model.classification.LogisticRegression(data, name='LogisticRegression')
+LogisticRegression.auto(search_best_params=True)
+
 print(me.comparison())

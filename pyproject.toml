@@ -1,6 +1,6 @@
 [project]
 name = "ModelEase"
-version = "0.1.3"
+version = "0.1.5"
 authors = [
     { name = "YYSF-Y", email = "brait.w216@gmail.com" },
 ]
